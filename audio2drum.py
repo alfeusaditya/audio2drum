@@ -62,7 +62,8 @@ def decay(env, a, stop):  # seconds until env falls to 25% of its attack peak (o
 # ---------- hits: [time, family, note (tom: set later by pitch), velocity, tom_hz]
 hits = []
 stems = find_stems(A.src)
-y, _ = librosa.load(A.src, sr=SR, mono=True)
+yst, _ = librosa.load(A.src, sr=SR, mono=False)  # stereo kept for the pan rule (mix mode)
+y = librosa.to_mono(yst)
 dur = len(y) / SR
 if stems:
     BAND = {'kick': (30, 250), 'snare': (150, 10000), 'toms': (60, 700),
@@ -128,6 +129,10 @@ else:
     bands = [(30, 90), (90, 300), (300, 1500), (2500, 8000), (8000, 20000)]  # low, body, mid, noise, air
     E = np.array([S[(f >= lo) & (f < hi)].sum(0) for lo, hi in bands])
     pm = (f >= 70) & (f < 400)
+    # 50-300 Hz per channel for the pan rule; a mono file gives pan 0 (rule never fires)
+    bm = (f >= 50) & (f < 300)
+    EL, ER = (np.abs(librosa.stft(c, n_fft=4096, hop_length=HOP))[bm].sum(0) for c in yst[:2]) \
+        if yst.ndim == 2 else (E[1], E[1])
     rows = []  # t, low, body, mid, noise, air, body ring, pitch, noise decay, air decay, weak?
     for a in sorted([*ob, *weak]):
         i = np.searchsorted(ob, a, 'right')
@@ -156,6 +161,18 @@ else:
         dry = ring < 0.15 and low_ring < 0.7  # dies at once: a kick's thud, never a ringing tom (user)
         # kick: low-dominant, or strong low that is dry (punchy kicks carry a fat 90-300 Hz body)
         kick = n[0] > 0.35 and (low >= 0.9 * body or (dry and low >= 0.3 * body))
+        # User rule: kick/snare sit in the centre, toms almost never. Off-centre low that rings = tom.
+        # Fast rolls cut the ring short: there a tom is told from a panned snare by its top (user):
+        # > 5 kHz vs 50-300 Hz is >= 0.61 on centred snares, ~0.2-0.4 on toms. Kicks keep the ring test.
+        # Kick/snare measure |pan| <= 0.13 (even under a tom's tail, which low_ring >= 1.3 excludes).
+        # rise: the hit brings its OWN 50-300 Hz, not a hat/snare landing on a panned tom's tail.
+        l_, r_ = EL[a_:a_ + 8].sum(), ER[a_:a_ + 8].sum()
+        pre = EL[max(a_ - 14, 0):max(a_ - 8, 1)].mean() + ER[max(a_ - 14, 0):max(a_ - 8, 1)].mean()
+        top = S[f >= 5000, a_:a_ + 8].sum() / (S[bm, a_:a_ + 8].sum() + 1e-9)
+        if abs(r_ - l_) >= 0.18 * (r_ + l_ + 1e-9) and max(n[0], n[1]) >= 0.12 \
+                and (low_ring >= 1.3 or (not kick and top < 0.6)) \
+                and (EL[a_:a_ + 6].mean() + ER[a_:a_ + 6].mean()) >= 1.15 * pre:
+            hits.append([t, 'tom', None, vel(max(n[0], n[1])), pitch]); continue
         # snare: wires + short body ring + mid not far below body; tom: rings longer or is darker.
         # Calibrated on 3 kits: snares mid/body >= 0.63 with ring < 0.3; short toms mid/body <= 0.60.
         snare = not kick and max(n[1], n[2]) > 0.4 and n[3] > 0.3 and ring < 0.3 and n[2] >= 0.62 * n[1]

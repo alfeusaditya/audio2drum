@@ -22,7 +22,7 @@ Tidak memakai neural network. Setiap pukulan dikenali dari warna suaranya:
 |---|---|
 | **Kick** | low (30–90 Hz) kuat dan langsung mati (kering), walau body 90–300 Hz-nya tebal |
 | **Snare** | ada *crack* (300–1500 Hz) + desis senar (2.5–8 kHz), atau resonansi 200–300 Hz milik pukulan itu sendiri |
-| **Tom** | low/body kuat, berdengung lebih lama dari kick, tanpa crack; rack vs floor dipisah dari pitch |
+| **Tom** | low/body kuat, berdengung lebih lama dari kick, tanpa crack; atau (file stereo) low 50–300 Hz yang ter-pan ke kiri/kanan dan berdengung (di roll cepat: energi di atas 5 kHz jauh lebih rendah dari snare), karena kick/snare selalu di tengah; rack vs floor dipisah dari pitch |
 | **Hi-hat** | desis terutama di atas 8 kHz; closed / half-open / open dari panjang decay; aksen tipis tetap hat |
 | **Crash** | desis 2.5–8 kHz yang lebar dan berdengung (> ~1 detik) |
 | **Unknown** | transient yang terdengar tapi tidak cocok aturan mana pun → not **34** (2 di bawah kick), tidak dibuang |
