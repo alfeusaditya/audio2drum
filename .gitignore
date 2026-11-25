@@ -1,0 +1,14 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+last.mid
+last.txt
+*.wav
+*.aif
+*.aiff
+*.flac
+*.mp3
+*.RPP
+*.rpp-bak
+.DS_Store
